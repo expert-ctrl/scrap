@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Robin des Airs — Lead Finder</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root { --bg:#0a0a0f;--surface:#13131a;--border:#1e1e2e;--accent:#00e5a0;--accent2:#ff6b35;--accent3:#a78bfa;--text:#e8e8f0;--muted:#6b6b8a;--card:#16161f; }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:2rem 1rem}
+    .container{max-width:900px;margin:0 auto}
+    header{text-align:center;margin-bottom:2.5rem}
+    .badge{display:inline-block;background:rgba(0,229,160,0.1);border:1px solid rgba(0,229,160,0.3);color:var(--accent);font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:0.15em;padding:0.3rem 0.8rem;border-radius:2px;margin-bottom:1rem;text-transform:uppercase}
+    h1{font-size:clamp(1.8rem,5vw,3rem);font-weight:800;letter-spacing:-0.03em;background:linear-gradient(135deg,#fff 30%,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .subtitle{color:var(--muted);font-size:0.9rem;margin-top:0.5rem}
+    .platform-tabs{display:flex;gap:0.5rem;margin-bottom:1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:0.4rem}
+    .ptab{flex:1;display:flex;align-items:center;justify-content:center;gap:0.5rem;padding:0.7rem;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:600;color:var(--muted);border:none;background:none;transition:all 0.2s}
+    .ptab.tiktok.active{background:#fff;color:#000}
+    .ptab.facebook.active{background:#1877f2;color:#fff}
+    .ptab.instagram.active{background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:#fff}
+    .panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1rem}
+    .panel-title{font-size:0.7rem;font-family:'DM Mono',monospace;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem}
+    .keywords-grid{display:flex;flex-direction:column;gap:0.4rem;max-height:260px;overflow-y:auto;padding-right:4px}
+    .keywords-grid::-webkit-scrollbar{width:4px}
+    .keywords-grid::-webkit-scrollbar-thumb{background:var(--muted);border-radius:2px}
+    .keyword-row{display:flex;align-items:center;gap:0.75rem;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.9rem;transition:border-color 0.2s}
+    .keyword-row:focus-within{border-color:var(--accent)}
+    .kw-icon{font-size:0.9rem;flex-shrink:0}
+    .keyword-row input{flex:1;background:none;border:none;outline:none;color:var(--text);font-family:'DM Mono',monospace;font-size:0.85rem}
+    .keyword-row input::placeholder{color:var(--muted)}
+    .btn-remove{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0;transition:color 0.2s}
+    .btn-remove:hover{color:var(--accent2)}
+    .btn-add{width:100%;margin-top:0.4rem;background:none;border:1px dashed var(--border);color:var(--muted);font-family:'Syne',sans-serif;font-size:0.82rem;padding:0.5rem;border-radius:8px;cursor:pointer;transition:all 0.2s}
+    .btn-add:hover{border-color:var(--accent);color:var(--accent)}
+    .btn-run{width:100%;background:var(--accent);color:#000;border:none;font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;padding:1rem;border-radius:10px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:0.5rem;margin-bottom:1.5rem}
+    .btn-run:hover{background:#00ffc3;transform:translateY(-1px)}
+    .btn-run:disabled{background:var(--border);color:var(--muted);cursor:not-allowed;transform:none}
+    .spinner{width:18px;height:18px;border:2px solid rgba(0,0,0,0.3);border-top-color:#000;border-radius:50%;animation:spin 0.7s linear infinite;display:none}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem;margin-bottom:1.25rem}
+    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center}
+    .stat-num{font-size:1.8rem;font-weight:800;line-height:1}
+    .stat-num.green{color:var(--accent)}.stat-num.orange{color:var(--accent2)}.stat-num.purple{color:var(--accent3)}.stat-num.white{color:var(--text)}
+    .stat-label{font-size:0.65rem;color:var(--muted);margin-top:0.3rem;font-family:'DM Mono',monospace}
+    .filters{display:flex;gap:0.4rem;margin-bottom:1rem;flex-wrap:wrap}
+    .filter-btn{background:var(--surface);border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:0.72rem;padding:0.35rem 0.75rem;border-radius:6px;cursor:pointer;transition:all 0.2s}
+    .filter-btn.active{background:rgba(0,229,160,0.1);border-color:var(--accent);color:var(--accent)}
+    .results-list{display:flex;flex-direction:column;gap:0.6rem}
+    .result-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1.1rem;transition:border-color 0.2s;animation:fadeIn 0.3s ease both}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    .result-card:hover{border-color:rgba(0,229,160,0.25)}
+    .result-card.has-contact{border-left:3px solid var(--accent)}
+    .card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.6rem;gap:1rem}
+    .platform-badge{font-size:0.65rem;font-family:'DM Mono',monospace;padding:0.15rem 0.5rem;border-radius:3px;flex-shrink:0}
+    .pb-tiktok{background:rgba(255,255,255,0.1);color:#fff}
+    .pb-facebook{background:rgba(24,119,242,0.2);color:#60a5fa}
+    .pb-instagram{background:rgba(220,39,67,0.2);color:#f472b6}
+    .username{font-weight:600;font-size:0.95rem}
+    .username a{color:inherit;text-decoration:none}
+    .username a:hover{color:var(--accent)}
+    .nickname{font-size:0.75rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:0.1rem}
+    .followers{font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted);white-space:nowrap}
+    .bio{font-size:0.82rem;color:#b0b0c8;line-height:1.5;margin-bottom:0.6rem;font-family:'DM Mono',monospace}
+    .card-footer{display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center}
+    .tag{font-family:'DM Mono',monospace;font-size:0.68rem;padding:0.2rem 0.55rem;border-radius:4px}
+    .tag-keyword{background:rgba(255,107,53,0.1);color:var(--accent2);border:1px solid rgba(255,107,53,0.2)}
+    .tag-wa{background:rgba(0,229,160,0.1);color:var(--accent);border:1px solid rgba(0,229,160,0.3)}
+    .tag-phone{background:rgba(167,139,250,0.1);color:var(--accent3);border:1px solid rgba(167,139,250,0.3)}
+    .btn-copy{background:none;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:0.68rem;padding:0.2rem 0.55rem;border-radius:4px;cursor:pointer;transition:all 0.2s}
+    .btn-copy:hover{border-color:var(--accent);color:var(--accent)}
+    .btn-wa{background:#25D366;border:none;color:#fff;font-family:'Syne',sans-serif;font-weight:700;font-size:0.75rem;padding:0.3rem 0.8rem;border-radius:4px;cursor:pointer;transition:all 0.2s;display:inline-flex;align-items:center;gap:0.3rem;text-decoration:none;margin-left:auto}
+    .btn-wa:hover{background:#1ebe5d;transform:translateY(-1px)}
+    .btn-export{background:none;border:1px solid var(--border);color:var(--text);font-family:'Syne',sans-serif;font-size:0.82rem;padding:0.6rem 1.2rem;border-radius:8px;cursor:pointer;transition:all 0.2s;margin-top:1rem}
+    .btn-export:hover{border-color:var(--accent);color:var(--accent)}
+    .error-msg{background:rgba(255,107,53,0.1);border:1px solid rgba(255,107,53,0.3);color:var(--accent2);padding:0.9rem 1.1rem;border-radius:8px;font-family:'DM Mono',monospace;font-size:0.82rem;margin-bottom:1rem}
+    .empty{text-align:center;padding:3rem;color:var(--muted);font-family:'DM Mono',monospace;font-size:0.85rem}
+    #results-section{display:none}
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="badge">✈️ Robin des Airs — Lead Finder</div>
+    <h1>Trouve tes contacts<br/>West Africa</h1>
+    <p class="subtitle">TikTok · Facebook · Instagram — WhatsApp en 1 clic</p>
+  </header>
+
+  <div class="platform-tabs">
+    <button class="ptab tiktok active" onclick="switchPlatform('tiktok',this)"><span>🎵</span> TikTok</button>
+    <button class="ptab facebook" onclick="switchPlatform('facebook',this)"><span>📘</span> Facebook</button>
+    <button class="ptab instagram" onclick="switchPlatform('instagram',this)"><span>📸</span> Instagram</button>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title" id="kw-title">🎵 Mots-clés TikTok</div>
+    <div class="keywords-grid" id="keywords-grid"></div>
+    <button class="btn-add" onclick="addKeyword()">+ Ajouter un mot-clé</button>
+  </div>
+
+  <button class="btn-run" id="btn-run" onclick="runScraper()">
+    <div class="spinner" id="spinner"></div>
+    <span id="btn-text">🚀 Lancer la recherche</span>
+  </button>
+
+  <div id="error-box" class="error-msg" style="display:none"></div>
+
+  <div id="results-section">
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-num white" id="stat-total">0</div><div class="stat-label">profils</div></div>
+      <div class="stat-card"><div class="stat-num green" id="stat-wa">0</div><div class="stat-label">WhatsApp</div></div>
+      <div class="stat-card"><div class="stat-num purple" id="stat-phone">0</div><div class="stat-label">téléphone</div></div>
+      <div class="stat-card"><div class="stat-num orange" id="stat-none">0</div><div class="stat-label">sans contact</div></div>
+    </div>
+    <div class="filters">
+      <button class="filter-btn active" onclick="setFilter('all',this)">Tous</button>
+      <button class="filter-btn" onclick="setFilter('wa',this)">📱 WhatsApp</button>
+      <button class="filter-btn" onclick="setFilter('phone',this)">📞 Téléphone</button>
+      <button class="filter-btn" onclick="setFilter('none',this)">Sans contact</button>
+      <button class="filter-btn" onclick="setFilter('tiktok',this)">🎵 TikTok</button>
+      <button class="filter-btn" onclick="setFilter('facebook',this)">📘 Facebook</button>
+      <button class="filter-btn" onclick="setFilter('instagram',this)">📸 Instagram</button>
+    </div>
+    <div class="results-list" id="results-list"></div>
+    <button class="btn-export" onclick="exportCSV()">⬇️ Exporter CSV</button>
+  </div>
+</div>
+<script>
+const WA_MSG = "Hello, Salam Alaikum\n\nMy name is Climbie Kodjo, I'm currently in Kololi, Senegambia. I run Robin des Airs, a European-based service that handles compensation claims directly with airlines.\n\nWe help passengers get up to €600 for delayed or cancelled flights under EU law — no win, no fee.\n\nYour client sends a photo of their boarding pass on WhatsApp, we handle everything in Europe, and you earn a commission on each successful case.\n\nI can stop by for 5 minutes to show you how it works.";
+
+const KEYWORDS = {
+  tiktok:["flight tickets Gambia","airline tickets Banjul","cheap flights Gambia","ticket booking Gambia","travel agent Banjul","flight booking Serekunda","ticket Serekunda","ticket agency Gambia","travel agency Gambia","flights Banjul airport","cheap flights Senegal","Gambia flight deals","billet avion Dakar","billet pas cher Sénégal","agence voyage Dakar","billetterie Dakar","billet électronique Dakar","vol pas cher Dakar","agence billet avion Sénégal","ticket avion Dakar","réservation vol Sénégal","vol Dakar Paris","vol Dakar Londres","agence vol Dakar","billetterie Serekunda","ticket agency Dakar","flight tickets Dakar","travel agent Senegal","airline booking Dakar","ticket Brikama","ticket agency Kanifing","Paris Banjul tickets","London Banjul flights","ticket avion Senegaal","voyage billet Senegaal"],
+  facebook:["flight tickets Gambia","cheap flights Banjul","travel agency Gambia","ticket agency Serekunda","billet avion Dakar","agence voyage Dakar","billetterie Sénégal","vol pas cher Dakar","cheap flights Senegal","airline tickets Gambia","billet électronique Sénégal"],
+  instagram:["flightticketsgambia","cheapflightsbanjul","travelagencygambia","billetavion","agencevoyagedakar","billetterieDakar","cheapflightssenegal","ticketagencyserekunda","volpascherDakar","airlineticketsbanjul","billetelectronique"]
+};
+
+const ICONS=['✈️','🌍','🎫','🗺️','🏖️','🚢','🌐','📍','💼','🛫'];
+const ENDPOINTS={tiktok:'/.netlify/functions/scrape',facebook:'/.netlify/functions/scrape-facebook',instagram:'/.netlify/functions/scrape-instagram'};
+const TITLES={tiktok:'🎵 Mots-clés TikTok',facebook:'📘 Mots-clés Facebook',instagram:'📸 Hashtags Instagram'};
+const PCLASS={tiktok:'pb-tiktok',facebook:'pb-facebook',instagram:'pb-instagram'};
+const PEMOJI={tiktok:'🎵',facebook:'📘',instagram:'📸'};
+
+let currentPlatform='tiktok', currentFilter='all', allResults=[];
+
+function switchPlatform(p,btn){
+  currentPlatform=p;
+  document.querySelectorAll('.ptab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('kw-title').textContent=TITLES[p];
+  renderKeywords(KEYWORDS[p]);
+}
+
+function renderKeywords(list){
+  document.getElementById('keywords-grid').innerHTML=list.map((kw,i)=>`
+    <div class="keyword-row">
+      <span class="kw-icon">${ICONS[i%ICONS.length]}</span>
+      <input type="text" value="${esc(kw)}" placeholder="Mot-clé..."/>
+      <button class="btn-remove" onclick="removeKeyword(this)">×</button>
+    </div>`).join('');
+}
+
+function addKeyword(){
+  const g=document.getElementById('keywords-grid');
+  const r=document.createElement('div');
+  r.className='keyword-row';
+  r.innerHTML=`<span class="kw-icon">${ICONS[g.children.length%ICONS.length]}</span><input type="text" placeholder="Nouveau mot-clé..."/><button class="btn-remove" onclick="removeKeyword(this)">×</button>`;
+  g.appendChild(r);r.querySelector('input').focus();
+}
+
+function removeKeyword(btn){const g=document.getElementById('keywords-grid');if(g.children.length>1)btn.closest('.keyword-row').remove();}
+
+function getKeywords(){return[...document.querySelectorAll('#keywords-grid input')].map(i=>i.value.trim()).filter(Boolean);}
+
+async function runScraper(){
+  const keywords=getKeywords();if(!keywords.length)return;
+  const btn=document.getElementById('btn-run'),sp=document.getElementById('spinner'),bt=document.getElementById('btn-text'),eb=document.getElementById('error-box');
+  btn.disabled=true;sp.style.display='block';bt.textContent='Recherche en cours...';eb.style.display='none';
+  try{
+    const res=await fetch(ENDPOINTS[currentPlatform],{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({keywords})});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'Erreur serveur');
+    allResults=[...allResults.filter(r=>r.platform!==currentPlatform),...data.results];
+    renderResults();
+  }catch(err){eb.textContent='❌ '+err.message;eb.style.display='block';}
+  finally{btn.disabled=false;sp.style.display='none';bt.textContent='🚀 Lancer la recherche';}
+}
+
+function renderResults(){
+  const section=document.getElementById('results-section'),list=document.getElementById('results-list');
+  section.style.display='block';
+  const filtered=allResults.filter(r=>{
+    if(currentFilter==='wa')return!!r.whatsapp;
+    if(currentFilter==='phone')return!!r.phone&&!r.whatsapp;
+    if(currentFilter==='none')return!r.whatsapp&&!r.phone;
+    if(['tiktok','facebook','instagram'].includes(currentFilter))return r.platform===currentFilter;
+    return true;
+  });
+  document.getElementById('stat-total').textContent=allResults.length;
+  document.getElementById('stat-wa').textContent=allResults.filter(r=>r.whatsapp).length;
+  document.getElementById('stat-phone').textContent=allResults.filter(r=>r.phone&&!r.whatsapp).length;
+  document.getElementById('stat-none').textContent=allResults.filter(r=>!r.whatsapp&&!r.phone).length;
+  if(!filtered.length){list.innerHTML='<div class="empty">🔍 Aucun résultat pour ce filtre</div>';return;}
+  list.innerHTML=filtered.map((r,i)=>`
+    <div class="result-card ${r.whatsapp||r.phone?'has-contact':''}" style="animation-delay:${i*30}ms">
+      <div class="card-top">
+        <div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span class="platform-badge ${PCLASS[r.platform]}">${PEMOJI[r.platform]} ${r.platform}</span>
+          </div>
+          <div class="username"><a href="${esc(r.profileUrl)}" target="_blank">@${esc(r.username)}</a></div>
+          ${r.nickname?`<div class="nickname">${esc(r.nickname)}</div>`:''}
+        </div>
+        <div class="followers">👥 ${Number(r.followers||0).toLocaleString('fr')}</div>
+      </div>
+      <div class="bio">${esc(r.bio).slice(0,120)}${(r.bio||'').length>120?'...':''}</div>
+      <div class="card-footer">
+        <span class="tag tag-keyword">${esc(r.keyword)}</span>
+        ${r.whatsapp?`<span class="tag tag-wa">📱 ${esc(r.whatsapp)}</span>`:''}
+        ${r.phone&&!r.whatsapp?`<span class="tag tag-phone">📞 ${esc(r.phone)}</span>`:''}
+        <button class="btn-copy" onclick="copyText('${esc(r.whatsapp||r.phone||r.username)}')">📋 Copier</button>
+        ${r.whatsapp||r.phone?`<a class="btn-wa" href="https://wa.me/${(r.whatsapp||r.phone).replace(/[\s\-\.+]/g,'')}?text=${encodeURIComponent(WA_MSG)}" target="_blank">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.118 1.528 5.855L.057 23.882l6.195-1.624A11.934 11.934 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.794 9.794 0 01-4.988-1.362l-.357-.212-3.676.964.981-3.584-.233-.369A9.79 9.79 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
+          Contacter
+        </a>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function setFilter(f,btn){currentFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');if(allResults.length)renderResults();}
+function copyText(t){navigator.clipboard.writeText(t);}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function exportCSV(){
+  if(!allResults.length)return;
+  const h=['platform','username','nickname','bio','whatsapp','phone','followers','profileUrl','keyword'];
+  const rows=allResults.map(r=>h.map(k=>`"${String(r[k]||'').replace(/"/g,'""')}"`).join(','));
+  const blob=new Blob(['\uFEFF'+[h.join(','),...rows].join('\n')],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`leads_robin_${new Date().toISOString().slice(0,10)}.csv`;a.click();
+}
+renderKeywords(KEYWORDS.tiktok);
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "name": "tiktok-agency-finder",
+  "version": "1.0.0",
+  "description": "TikTok Agency Scraper — Gambia & Senegal",
+  "scripts": {
+    "dev": "netlify dev"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.0.0"
+  }
+}

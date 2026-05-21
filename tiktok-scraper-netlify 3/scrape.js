@@ -1,4 +1,3 @@
-
 const APIFY_TOKEN = process.env.APIFY_TOKEN;
 
 function extractContacts(text) {
@@ -35,25 +34,66 @@ function parseProfile(item, keyword) {
   return { platform: "tiktok", keyword, username, nickname, bio, ...extractContacts(bio), followers, profileUrl: username ? `https://www.tiktok.com/@${username}` : "" };
 }
 
+async function runActorAsync(keyword) {
+  // 1. Lancer le job
+  const runRes = await fetch(
+    `https://api.apify.com/v2/acts/clockworks~tiktok-scraper/runs?token=${APIFY_TOKEN}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        searchQueries: [keyword],
+        resultsPerPage: 10,
+        maxProfilesPerQuery: 8,
+        shouldDownloadVideos: false,
+        shouldDownloadCovers: false,
+      }),
+    }
+  );
+  if (!runRes.ok) return [];
+  const run = await runRes.json();
+  const runId = run.data?.id;
+  if (!runId) return [];
+
+  // 2. Attendre max 25 secondes que le job finisse
+  for (let i = 0; i < 5; i++) {
+    await new Promise(r => setTimeout(r, 5000));
+    const statusRes = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN}`);
+    const status = await statusRes.json();
+    if (["SUCCEEDED", "FAILED", "TIMED-OUT", "ABORTED"].includes(status.data?.status)) break;
+  }
+
+  // 3. Récupérer les résultats
+  const dataRes = await fetch(
+    `https://api.apify.com/v2/actor-runs/${runId}/dataset/items?token=${APIFY_TOKEN}&limit=50`
+  );
+  if (!dataRes.ok) return [];
+  return await dataRes.json();
+}
+
 exports.handler = async (event) => {
   const headers = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type", "Content-Type": "application/json" };
   if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers, body: "" };
   if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: JSON.stringify({ error: "Methode non autorisee" }) };
   if (!APIFY_TOKEN) return { statusCode: 500, headers, body: JSON.stringify({ error: "APIFY_TOKEN non configure" }) };
+
   let keywords;
   try { keywords = JSON.parse(event.body).keywords || []; } catch { return { statusCode: 400, headers, body: JSON.stringify({ error: "Body JSON invalide" }) }; }
+
+  // Max 2 keywords par appel pour rester sous 26 secondes
+  const limited = keywords.slice(0, 2);
   const allResults = [], seen = new Set();
-  for (const keyword of keywords) {
+
+  for (const keyword of limited) {
     try {
-      const res = await fetch(`https://api.apify.com/v2/acts/clockworks~tiktok-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ searchQueries: [keyword], resultsPerPage: 20, maxProfilesPerQuery: 15, shouldDownloadVideos: false, shouldDownloadCovers: false }),
-      });
-      if (!res.ok) continue;
-      const items = await res.json();
-      for (const item of items) { const p = parseProfile(item, keyword); if (p && !seen.has(p.username)) { seen.add(p.username); allResults.push(p); } }
+      const items = await runActorAsync(keyword);
+      for (const item of items) {
+        const p = parseProfile(item, keyword);
+        if (p && !seen.has(p.username)) { seen.add(p.username); allResults.push(p); }
+      }
     } catch (err) { console.error(`TikTok error "${keyword}":`, err.message); }
   }
+
   allResults.sort((a, b) => (b.whatsapp ? 1 : 0) - (a.whatsapp ? 1 : 0));
   return { statusCode: 200, headers, body: JSON.stringify({ total: allResults.length, withContact: allResults.filter(r => r.whatsapp || r.phone).length, results: allResults }) };
 };
